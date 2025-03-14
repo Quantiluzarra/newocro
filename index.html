@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Букмекерская игра</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Букмекерская игра</h1>
+        <div class="arena">
+            <canvas id="gameCanvas" width="500" height="500"></canvas>
+        </div>
+        <div class="stats">
+            <h2>Характеристики ИИ</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ИИ</th>
+                        <th>Здоровье</th>
+                        <th>Сила</th>
+                        <th>Поведение</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>ИИ1</td>
+                        <td id="ai1Health">100</td>
+                        <td id="ai1Strength">5</td>
+                        <td id="ai1Behavior">Агрессивное</td>
+                    </tr>
+                    <tr>
+                        <td>ИИ2</td>
+                        <td id="ai2Health">100</td>
+                        <td id="ai2Strength">5</td>
+                        <td id="ai2Behavior">Оборонительное</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="odds">
+            <h2>Шансы</h2>
+            <p>Шансы для ИИ1: <span id="ai1Odds">1.80</span></p>
+            <p>Шансы для ИИ2: <span id="ai2Odds">1.80</span></p>
+        </div>
+        <div class="betting">
+            <h2>Сделать ставку</h2>
+            <form id="betForm">
+                <label>
+                    <input type="radio" name="ai" value="ai1" checked> ИИ1
+                </label>
+                <label>
+                    <input type="radio" name="ai" value="ai2"> ИИ2
+                </label>
+                <input type="number" id="betAmount" placeholder="Сумма ставки" min="1">
+                <button type="submit">Сделать ставку</button>
+            </form>
+        </div>
+        <div class="balance">
+            <h2>Баланс: <span id="balance">1000</span></h2>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
