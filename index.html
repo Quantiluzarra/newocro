@@ -3,64 +3,559 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Букмекерская игра</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Футуристический Кликер</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CSS Переменные для Тем --- */
+        :root {
+            --bg-color: #e8eff1; /* Светлый фон */
+            --text-color: #2c3e50; /* Темный текст */
+            --accent-color: #00d1ff; /* Яркий синий акцент */
+            --accent-darker: #00aacc;
+            --target-color: var(--accent-color);
+            --border-color: rgba(44, 62, 80, 0.1); /* Полупрозрачная темная граница */
+            --menu-bg: rgba(255, 255, 255, 0.95);
+            --shadow-color: rgba(44, 62, 80, 0.15);
+            --pattern-color: rgba(44, 62, 80, 0.04);
+             --button-bg: var(--accent-color);
+             --button-text: #fff;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a2e; /* Темно-синий фон */
+            --text-color: #e8eff1; /* Светлый текст */
+            --accent-color: #00d1ff; /* Оставляем тот же яркий синий */
+            --accent-darker: #00aacc;
+            --target-color: var(--accent-color);
+            --border-color: rgba(232, 239, 241, 0.1); /* Полупрозрачная светлая граница */
+            --menu-bg: rgba(44, 62, 80, 0.95);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --pattern-color: rgba(232, 239, 241, 0.03);
+             --button-bg: var(--accent-color);
+             --button-text: #1a1a2e;
+        }
+
+        /* --- Базовые стили --- */
+        *, *::before, *::after {
+            box-sizing: border-box; /* Улучшенная модель бокса */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif; /* Применяем Poppins */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.4s ease, color 0.4s ease; /* Плавный переход темы */
+            font-weight: 400; /* Стандартная толщина */
+        }
+
+        /* --- Фоновый узор (тонкие диагональные линии) --- */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: linear-gradient(45deg, var(--pattern-color) 25%, transparent 25%, transparent 75%, var(--pattern-color) 75%),
+                              linear-gradient(-45deg, var(--pattern-color) 25%, transparent 25%, transparent 75%, var(--pattern-color) 75%);
+            background-size: 30px 30px;
+            opacity: 0.5;
+            z-index: -1; /* Позади всего контента */
+             transition: background-image 0.4s ease; /* Плавная смена цвета узора */
+        }
+
+        /* --- Игровая область --- */
+        #game-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- Цель (Круг) --- */
+        #target {
+            position: absolute;
+            width: 16vmin; /* Немного меньше */
+            height: 16vmin;
+            max-width: 110px;
+            max-height: 110px;
+            background-color: var(--target-color);
+            border-radius: 50%;
+            cursor: pointer;
+            user-select: none;
+            opacity: 0;
+            transform: scale(0.5);
+            transform-origin: center center;
+            box-shadow: 0 0 25px rgba(0, 209, 255, 0.3), /* Легкое свечение */
+                        0 5px 15px var(--shadow-color); /* Тень */
+            border: 2px solid rgba(255, 255, 255, 0.3); /* Белая окантовка для эффекта стекла */
+            transition: opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+                        transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+                        top 0.6s cubic-bezier(0.25, 0.8, 0.25, 1),
+                        left 0.6s cubic-bezier(0.25, 0.8, 0.25, 1),
+                        box-shadow 0.3s ease, border 0.3s ease,
+                        background-color 0.2s ease; /* Добавили переходы для тени/границы */
+            will-change: transform, opacity; /* Оптимизация для анимаций */
+        }
+
+        #target.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #target.shrinking {
+            animation-name: shrink;
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
+        }
+
+        #target.clicked {
+             transform: scale(0.92); /* Чуть сильнее эффект клика */
+             box-shadow: 0 0 15px rgba(0, 209, 255, 0.5), 0 3px 10px var(--shadow-color); /* Уменьшаем тень при клике */
+             transition: transform 0.05s ease, box-shadow 0.05s ease;
+        }
+
+        @keyframes shrink {
+            from { transform: scale(1); opacity: 1; }
+            to { transform: scale(0); opacity: 0; }
+        }
+
+        /* --- Интерфейс (Счет, Game Over, Кнопки) --- */
+        .ui-panel { /* Общий стиль для панелей счета и Game Over */
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none; /* Не мешать кликам */
+        }
+
+        #score-board {
+            top: 25px;
+            font-size: calc(18px + 2.5vmin); /* Крупнее и красивее */
+            font-weight: 600; /* Полужирный */
+            color: var(--text-color);
+            opacity: 0.8;
+            transition: color 0.4s ease, opacity 0.4s ease;
+        }
+        #score-board #score {
+             font-weight: 700; /* Сами числа еще жирнее */
+        }
+
+
+        #game-over {
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: auto; /* Автоширина */
+            padding: 30px 50px;
+            background-color: var(--menu-bg); /* Используем фон меню */
+            border-radius: 12px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            display: none;
+            z-index: 20;
+            text-align: center;
+            color: var(--text-color);
+            pointer-events: auto; /* Разрешить клики внутри */
+        }
+        #game-over-title {
+             font-size: calc(22px + 3vmin);
+             font-weight: 700;
+             margin-bottom: 15px;
+             color: var(--accent-color); /* Акцентный цвет для заголовка */
+        }
+        .final-score {
+            font-size: calc(16px + 2vmin);
+            margin-bottom: 25px;
+        }
+
+
+        /* --- Кнопки --- */
+        .button {
+            display: inline-block; /* Используем inline-block */
+            padding: 12px 25px;
+            font-size: calc(14px + 1vmin);
+            font-weight: 600; /* Полужирные кнопки */
+            font-family: 'Poppins', sans-serif; /* Явно указываем шрифт */
+            color: var(--button-text);
+            background-color: var(--button-bg);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+             pointer-events: auto; /* Разрешить клики */
+        }
+        .button:hover {
+            background-color: var(--accent-darker);
+            transform: translateY(-2px); /* Легкий подъем при наведении */
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.15);
+        }
+        .button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+         #restart-button {
+            margin-top: 10px;
+         }
+
+        /* --- Кнопка Настроек --- */
+        #settings-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 28px; /* Размер иконки */
+            cursor: pointer;
+            z-index: 15;
+            padding: 5px;
+            color: var(--text-color);
+            opacity: 0.7;
+            transition: opacity 0.2s ease, transform 0.2s ease, color 0.4s ease;
+            pointer-events: auto; /* Разрешить клики */
+        }
+        #settings-button:hover {
+            opacity: 1;
+            transform: rotate(45deg);
+        }
+
+        /* --- Меню Настроек --- */
+        #settings-menu {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            pointer-events: none; /* Неактивно по умолчанию */
+        }
+        #settings-menu.visible {
+            opacity: 1;
+            visibility: visible;
+             pointer-events: auto; /* Активировать клики при видимости */
+        }
+
+        .settings-content {
+            background-color: var(--menu-bg);
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+             transform: scale(0.9);
+             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Эффект появления */
+             color: var(--text-color);
+        }
+        #settings-menu.visible .settings-content {
+             transform: scale(1);
+        }
+
+        .settings-title {
+            font-size: calc(18px + 1.5vmin);
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--accent-color);
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: calc(14px + 0.8vmin);
+        }
+         .setting-item label {
+             margin-right: 15px;
+             font-weight: 600;
+         }
+
+        #close-settings-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+             padding: 5px;
+        }
+        #close-settings-button:hover {
+            opacity: 1;
+            transform: rotate(90deg);
+        }
+
+         /* Стилизация кнопки темы как переключателя */
+         #theme-toggle-button {
+             min-width: 100px; /* Минимальная ширина */
+         }
+
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Букмекерская игра</h1>
-        <div class="arena">
-            <canvas id="gameCanvas" width="500" height="500"></canvas>
-        </div>
-        <div class="stats">
-            <h2>Характеристики ИИ</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ИИ</th>
-                        <th>Здоровье</th>
-                        <th>Сила</th>
-                        <th>Поведение</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>ИИ1</td>
-                        <td id="ai1Health">100</td>
-                        <td id="ai1Strength">5</td>
-                        <td id="ai1Behavior">Агрессивное</td>
-                    </tr>
-                    <tr>
-                        <td>ИИ2</td>
-                        <td id="ai2Health">100</td>
-                        <td id="ai2Strength">5</td>
-                        <td id="ai2Behavior">Оборонительное</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="odds">
-            <h2>Шансы</h2>
-            <p>Шансы для ИИ1: <span id="ai1Odds">1.80</span></p>
-            <p>Шансы для ИИ2: <span id="ai2Odds">1.80</span></p>
-        </div>
-        <div class="betting">
-            <h2>Сделать ставку</h2>
-            <form id="betForm">
-                <label>
-                    <input type="radio" name="ai" value="ai1" checked> ИИ1
-                </label>
-                <label>
-                    <input type="radio" name="ai" value="ai2"> ИИ2
-                </label>
-                <input type="number" id="betAmount" placeholder="Сумма ставки" min="1">
-                <button type="submit">Сделать ставку</button>
-            </form>
-        </div>
-        <div class="balance">
-            <h2>Баланс: <span id="balance">1000</span></h2>
+
+    <div id="game-area">
+        <div id="target"></div>
+    </div>
+
+    <div class="ui-panel" id="score-board">Счет: <span id="score">0</span></div>
+
+    <div id="settings-button">⚙️</div> <div id="game-over">
+        <div id="game-over-title">Игра окончена!</div>
+        <div class="final-score">Ваш счет: <span id="final-score-display">0</span></div>
+        <button class="button" id="restart-button">Начать заново</button>
+    </div>
+
+    <div id="settings-menu">
+        <div class="settings-content">
+            <button id="close-settings-button">&times;</button> <div class="settings-title">Настройки</div>
+            <div class="setting-item">
+                <label for="theme-toggle-button">Тема:</label>
+                <button class="button" id="theme-toggle-button">Темная</button> </div>
+            <div class="setting-item">
+                 <label>Сложность:</label>
+                 <span>(Пока не доступно)</span>
+             </div>
         </div>
     </div>
-    <script src="game.js"></script>
+
+    <script>
+        // --- Элементы DOM ---
+        const gameArea = document.getElementById('game-area');
+        const target = document.getElementById('target');
+        const scoreDisplay = document.getElementById('score');
+        const gameOverDisplay = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score-display');
+        const restartButton = document.getElementById('restart-button');
+        const settingsButton = document.getElementById('settings-button');
+        const settingsMenu = document.getElementById('settings-menu');
+        const closeSettingsButton = document.getElementById('close-settings-button');
+        const themeToggleButton = document.getElementById('theme-toggle-button');
+
+        // --- Игровые переменные ---
+        let score = 0;
+        let missTimeout = null;
+        let baseShrinkDuration = 2500; // мс
+        let currentShrinkDuration = baseShrinkDuration;
+        let gameRunning = false; // Начинаем с остановленной игры до первого старта
+        let isPaused = false; // Флаг паузы для настроек
+
+        // --- Функции ---
+
+        // Обновление счета
+        function updateScore() {
+            scoreDisplay.textContent = score;
+        }
+
+        // Показ Game Over
+        function showGameOver() {
+            gameRunning = false;
+            finalScoreDisplay.textContent = score; // Показываем финальный счет
+            clearTimeout(missTimeout);
+            target.style.display = 'none'; // Скрыть цель
+            // Плавное появление Game Over
+            gameOverDisplay.style.display = 'flex'; // Используем flex для центрирования содержимого
+            gameOverDisplay.style.flexDirection = 'column';
+            gameOverDisplay.style.alignItems = 'center';
+            // Небольшая задержка для CSS transition (если он есть на display/opacity)
+            setTimeout(() => { gameOverDisplay.style.opacity = '1'; }, 10);
+        }
+
+        // Перезапуск игры
+        function restartGame() {
+            score = 0;
+            updateScore();
+            currentShrinkDuration = baseShrinkDuration;
+            gameRunning = true;
+            isPaused = false; // Снимаем паузу на всякий случай
+            gameOverDisplay.style.display = 'none';
+            gameOverDisplay.style.opacity = '0'; // Скрыть плавно
+            target.style.display = 'block';
+            resetTarget();
+        }
+
+        // Размещение и запуск цели
+        function resetTarget() {
+            if (!gameRunning || isPaused) return; // Не делать ничего, если игра не идет или на паузе
+
+            target.classList.remove('active', 'shrinking', 'clicked');
+            target.style.animationName = 'none'; // Важно для перезапуска анимации
+            target.style.animationDuration = '';
+            target.style.opacity = '0';
+            target.style.transform = 'scale(0.5)';
+
+            clearTimeout(missTimeout);
+
+            requestAnimationFrame(() => {
+                 requestAnimationFrame(() => { // Двойной requestAnimationFrame для надежности
+                    if (!gameRunning || isPaused) return;
+
+                    const areaWidth = gameArea.clientWidth;
+                    const areaHeight = gameArea.clientHeight;
+                    const targetSize = Math.min(110, window.innerWidth * 0.16, window.innerHeight * 0.16); // Используем значения из CSS
+                    const maxTop = areaHeight - targetSize - 30; // Увеличим отступы
+                    const maxLeft = areaWidth - targetSize - 30;
+
+                    target.style.top = `${Math.max(20, Math.random() * maxTop)}px`;
+                    target.style.left = `${Math.max(20, Math.random() * maxLeft)}px`;
+
+                    currentShrinkDuration = Math.max(600, baseShrinkDuration - score * 60); // Ускоряем чуть быстрее, минимум 0.6 сек
+                    target.style.animationDuration = `${currentShrinkDuration}ms`;
+
+                    // Переприменяем анимацию через класс и style.animationName
+                    target.style.animationName = 'shrink';
+                    target.classList.add('active');
+
+                    // Небольшая задержка перед началом сжатия
+                    setTimeout(() => {
+                       if (gameRunning && !isPaused) {
+                           target.classList.add('shrinking');
+                           missTimeout = setTimeout(handleMiss, currentShrinkDuration);
+                       }
+                    }, 100); // Даем чуть больше времени на появление
+                });
+            });
+        }
+
+        // Клик по цели
+        function handleHit(event) {
+            // Предотвращаем срабатывание клика на фоне, если меню открыто
+            if (isPaused || !gameRunning || !target.classList.contains('active') || event.target !== target) return;
+
+            score++;
+            updateScore();
+
+            target.classList.add('clicked');
+            setTimeout(() => {
+                if (gameRunning) { target.classList.remove('clicked'); }
+            }, 100);
+
+            resetTarget();
+        }
+
+        // Промах (время вышло)
+        function handleMiss() {
+            if (!gameRunning || isPaused) return;
+            showGameOver();
+        }
+
+        // --- Настройки ---
+
+        // Открыть меню настроек
+        function openSettings() {
+            if (gameRunning) {
+                isPaused = true;
+                clearTimeout(missTimeout); // Остановить таймер промаха
+                // Приостановить анимацию CSS, если она идет
+                const computedStyle = window.getComputedStyle(target);
+                if (computedStyle.animationPlayState === 'running') {
+                    target.style.animationPlayState = 'paused';
+                }
+            }
+            settingsMenu.classList.add('visible');
+        }
+
+        // Закрыть меню настроек
+        function closeSettings() {
+            settingsMenu.classList.remove('visible');
+            if (gameRunning) {
+                isPaused = false;
+                // Возобновить анимацию CSS, если была на паузе
+                 if (target.style.animationPlayState === 'paused') {
+                     target.style.animationPlayState = 'running';
+                     // Перезапустить таймер с оставшимся временем (сложно)
+                     // Проще - просто ресетнуть цель
+                     resetTarget();
+                 } else if (gameRunning) {
+                    // Если игра была активна, но анимация не шла (например, цель еще не появилась), просто запустим
+                    resetTarget();
+                 }
+            }
+        }
+
+        // Переключить тему
+        function toggleTheme() {
+            const currentTheme = document.body.dataset.theme || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.body.dataset.theme = newTheme;
+            localStorage.setItem('gameTheme', newTheme); // Сохраняем выбор
+            updateThemeButton(newTheme);
+        }
+
+         // Обновить текст кнопки темы
+         function updateThemeButton(theme) {
+             themeToggleButton.textContent = theme === 'light' ? 'Темная' : 'Светлая';
+         }
+
+        // Загрузить сохраненную тему
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('gameTheme');
+            if (savedTheme) {
+                document.body.dataset.theme = savedTheme;
+                 updateThemeButton(savedTheme);
+            } else {
+                 // Если тема не сохранена, используем светлую по умолчанию
+                 updateThemeButton('light');
+            }
+        }
+
+
+        // --- Инициализация и обработчики ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme(); // Загружаем тему при старте
+            updateScore();
+            // Не запускаем игру сразу, ждем рестарта или первого клика (если захотим так сделать)
+            // Пока оставим так, что игра начнется после закрытия Game Over экрана
+             showGameOver(); // Показываем экран "Game Over" как стартовый
+             finalScoreDisplay.parentElement.innerHTML = "Готовы начать?"; // Меняем текст на стартовом экране
+             finalScoreDisplay.parentElement.style.marginBottom = "25px"; // Отступ
+        });
+
+
+        target.addEventListener('click', handleHit);
+        target.addEventListener('touchstart', handleHit, { passive: true }); // Оптимизация для тачскринов
+
+        restartButton.addEventListener('click', restartGame);
+        restartButton.addEventListener('touchstart', restartGame, { passive: true });
+
+        settingsButton.addEventListener('click', openSettings);
+        settingsButton.addEventListener('touchstart', openSettings, { passive: true });
+
+        closeSettingsButton.addEventListener('click', closeSettings);
+        closeSettingsButton.addEventListener('touchstart', closeSettings, { passive: true });
+
+        themeToggleButton.addEventListener('click', toggleTheme);
+        themeToggleButton.addEventListener('touchstart', toggleTheme, { passive: true });
+
+        // Закрытие меню по клику на фон
+        settingsMenu.addEventListener('click', (event) => {
+             if (event.target === settingsMenu) { // Клик был именно по фону, а не по содержимому
+                 closeSettings();
+             }
+         });
+
+
+        // Адаптивность при ресайзе
+        window.addEventListener('resize', () => {
+            if (gameRunning && !isPaused) {
+                resetTarget(); // Сбрасываем цель для пересчета позиции
+            }
+        });
+
+    </script>
 </body>
 </html>
